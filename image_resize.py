@@ -4,7 +4,9 @@ import os
 from PIL import Image
 
 
-def calculate_new_image_size(image_width, image_height, scale, width, height):
+def calculate_new_image_size(image, scale=None, width=None,
+                             height=None):
+    image_width, image_height = image.size
     if scale:
         new_image_width = int(image_width * scale)
         new_image_height = int(image_height * scale)
@@ -25,29 +27,18 @@ def calculate_new_image_size(image_width, image_height, scale, width, height):
     return new_image_width, new_image_height
 
 
-def resize_image(path_to_original, path_to_output, **kwargs):
-    input_image = Image.open(path_to_original)
-    input_image_width, input_image_height = input_image.size
-    new_image_width, new_image_height = calculate_new_image_size(
-        input_image_width, input_image_height, kwargs.get('scale'),
-        kwargs.get('width'), kwargs.get('height'))
-    rounding_accuracy = 2
-    ratio_factor = True if round(input_image_width / input_image_height,
-                                 rounding_accuracy) == \
-                           round(new_image_width / new_image_height,
-                                 rounding_accuracy) else False
-    output_image = input_image.resize((new_image_width, new_image_height))
-    if path_to_output:
-        output_image.save(path_to_output)
-    else:
-        input_file_path = os.path.dirname(path_to_original)
-        output_file_name = os.path.basename(path_to_original).split('.')
-        output_image.save('{}{}__{}x{}.{}'.format(input_file_path,
-                                                  output_file_name[0],
-                                                  new_image_width,
-                                                  new_image_height,
-                                                  output_file_name[1]))
+def get_ratio_factor(orig_image, new_image, accuracy=2):
+    orig_image_width, orig_image_height = orig_image.size
+    new_image_width, new_image_height = new_image.size
+    ratio_factor = bool(
+        round(orig_image_width / orig_image_height, accuracy) ==
+        round(new_image_width / new_image_height, accuracy))
     return ratio_factor
+
+
+def resize_image(orig_image, new_width, new_height):
+    output_image = orig_image.resize((new_width, new_height))
+    return output_image
 
 
 def get_input_argument_parser():
@@ -66,6 +57,15 @@ def get_input_argument_parser():
 
 if __name__ == '__main__':
     args = get_input_argument_parser()
-    if not resize_image(args.input_file, args.output_file, scale=args.scale,
-                        width=args.width, height=args.height):
+    orig_image = Image.open(args.input_file)
+    new_image_width, new_image_height = calculate_new_image_size(
+        orig_image, args.scale, args.width, args.height)
+    new_image = resize_image(orig_image, new_image_width, new_image_height)
+    if args.output_file:
+        new_image.save(args.output_file)
+    else:
+        name, extension = os.path.splitext(args.input_file)
+        new_image.save('{}__{}x{}{}'.format(name, new_image_width,
+                                             new_image_height, extension))
+    if not get_ratio_factor(orig_image, new_image):
         print('Aspect ratio was broken')
