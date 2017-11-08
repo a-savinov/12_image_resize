@@ -36,11 +36,6 @@ def get_ratio_factor(orig_image, new_image, accuracy=2):
     return ratio_factor
 
 
-def resize_image(orig_image, new_width, new_height):
-    output_image = orig_image.resize((new_width, new_height))
-    return output_image
-
-
 def get_input_argument_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('input_file', help='Path to original image')
@@ -60,7 +55,7 @@ if __name__ == '__main__':
     orig_image = Image.open(args.input_file)
     new_image_width, new_image_height = calculate_new_image_size(
         orig_image, args.scale, args.width, args.height)
-    new_image = resize_image(orig_image, new_image_width, new_image_height)
+    new_image = orig_image.resize((new_image_width, new_image_height))
     if args.output_file:
         new_image.save(args.output_file)
     else:
